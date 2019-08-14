@@ -2,10 +2,62 @@ const syncComplete = (res) => {
   console.log('Sync Complete')
   updateProfileData(window.box)
 }
+
+const formatContact = (proofDid, otherProfileAddress) => {
+  const contact = {
+    '@context': 'http://schema.org/',
+    '@type': 'Person',
+    identifier: [{
+        '@type': 'PropertyValue',
+        name: 'DID',
+        value: `did:3:${proofDid}`,
+      },
+      {
+        '@type': 'PropertyValue',
+        name: 'Ethereum',
+        PropertyID: 'chainId_1',
+        value: otherProfileAddress,
+      },
+    ],
+  };
+
+  return contact;
+};
+
+const getFollowingProfiles = async (following) => {
+  const profileCalls = [];
+  following.forEach((profile) => {
+    profileCalls.push(Box.getProfile(profile.message.identifier[1].value));
+  });
+  const profilePromises = Promise.all(profileCalls);
+  const profiles = await profilePromises;
+
+  const profilesAndAddress = [];
+  profiles.forEach((profile, i) => {
+    profilesAndAddress.push([profile, following[i].message.identifier[1].value]);
+  });
+  return profilesAndAddress;
+};
+
+getfollowing.addEventListener('click', async (event) => {
+  try {
+    const addresses = await window.ethereum.enable();
+    const addressToUse = addresses[0];
+    // const addressToUse = '0xF1b5768F577D8a74939c79EDfa6721093aC7Ca6E';
+    console.log('address', addressToUse)
+    const profiles = await Box.getThread('MyFollowing', 'followingList', addressToUse, true);
+    console.log('profiles', profiles);
+    const myFollowing = profiles ? await getFollowingProfiles(profiles) : [];
+    console.log('myFollowing', myFollowing);
+  } catch (error) {
+    console.log(error);
+  }
+})
+
 bopen.addEventListener('click', event => {
 
   window.ethereum.enable().then(addresses => {
-    window.Box.openBox(addresses[0],  window.ethereum, {}).then(box => {
+    window.Box.openBox(addresses[0], window.ethereum, {}).then(box => {
       box.onSyncDone(syncComplete)
       window.box = box
       console.log(box)
@@ -20,6 +72,7 @@ bopen.addEventListener('click', event => {
           updateProfileData(box)
         })
       })
+
       verifyGithub.addEventListener('click', () => {
         box.verified.addGithub(gisturl.value).then(() => {
           updateProfileData(box)
@@ -98,7 +151,10 @@ bopen.addEventListener('click', event => {
         posts.style.display = 'block'
         threadModeration.style.display = 'block'
         if (members.checked) threadMembers.style.display = 'block'
-        box.spaces[window.currentSpace].joinThread(name, {firstModerator, members: membersBool}).then(thread => {
+        box.spaces[window.currentSpace].joinThread(name, {
+          firstModerator,
+          members: membersBool
+        }).then(thread => {
           window.currentThread = thread
           thread.onUpdate(() => {
             updateThreadData()
@@ -140,7 +196,7 @@ bopen.addEventListener('click', event => {
         updateThreadError()
         window.currentThread.getPosts().then(posts => {
           posts.map(post => {
-            threadData.innerHTML += post.author + ': <br />' + post.message  + '<br /><br />'
+            threadData.innerHTML += post.author + ': <br />' + post.message + '<br /><br />'
             threadData.innerHTML += `<button id="` + post.postId + `"onClick="window.deletePost(` + post.postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
           })
         })
@@ -151,20 +207,23 @@ bopen.addEventListener('click', event => {
         if (window.currentThread._members) {
           window.currentThread.listMembers().then(members => {
             members.map(member => {
-                threadMemberList.innerHTML += member + '<br />'
+              threadMemberList.innerHTML += member + '<br />'
             })
           })
         }
         threadModeratorList.innerHTML = ''
         window.currentThread.listModerators().then(moderators => {
           moderators.map(moderator => {
-              threadModeratorList.innerHTML += moderator  +  '<br />'
+            threadModeratorList.innerHTML += moderator + '<br />'
           })
         })
       }
 
-      postThread.addEventListener('click', () => {
-        window.currentThread.post(postMsg.value).catch(updateThreadError)
+      postThread.addEventListener('click', async () => {
+        const profile = await Box.getProfile(postMsg.value);
+        const contact = formatContact(profile.proof_did, postMsg.value);
+        console.log('contact', contact);
+        window.currentThread.post(contact).then(res => console.log('saved', res)).catch(updateThreadError)
       })
 
       bclose.addEventListener('click', () => {
@@ -192,12 +251,12 @@ profileGraphQL.addEventListener('click', () => {
     profileGraphQLData.innerHTML = ''
     if (res.profile) {
       Object.entries(res.profile).map(kv => {
-        profileGraphQLData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+        profileGraphQLData.innerHTML += kv[0] + ': ' + kv[1] + '<br />'
       })
     } else if (res.profiles) {
       res.profiles.map(profile => {
         Object.entries(profile).map(kv => {
-          profileGraphQLData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+          profileGraphQLData.innerHTML += kv[0] + ': ' + kv[1] + '<br />'
         })
         profileGraphQLData.innerHTML += '<hr />'
       })
@@ -216,12 +275,12 @@ function updateProfileData(box) {
   updateGithubUser(box)
 }
 
-function updatePrivateData (key, value) {
+function updatePrivateData(key, value) {
   privateStoreData.innerHTML = ''
   privateStoreData.innerHTML = key + ': ' + value
 }
 
-function logout (box) {
+function logout(box) {
   box.logout().then(() => {
     privateStoreData.innerHTML = ''
     profileData.innerHTML = ''
@@ -229,7 +288,7 @@ function logout (box) {
   })
 }
 
-function updateGithubUser (box) {
+function updateGithubUser(box) {
   githubUser.innerHTML = ''
   box.verified.github().then(res => {
     console.log(res.username)
