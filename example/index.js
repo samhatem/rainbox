@@ -42,8 +42,9 @@ const getFollowingProfiles = async (following) => {
 getfollowing.addEventListener('click', async (event) => {
   try {
     const addresses = await window.ethereum.enable();
-    const addressToUse = addresses[0];
+    // const addressToUse = addresses[0];
     // const addressToUse = '0xF1b5768F577D8a74939c79EDfa6721093aC7Ca6E';
+    const addressToUse = '0xa8eE0BABE72cD9A80Ae45dD74Cd3eaE7a82fd5d1';
     console.log('address', addressToUse)
     const profiles = await Box.getThread('MyFollowing', 'followingList', addressToUse, true);
     console.log('profiles', profiles);
@@ -195,9 +196,11 @@ bopen.addEventListener('click', event => {
         threadData.innerHTML = ''
         updateThreadError()
         window.currentThread.getPosts().then(posts => {
-          posts.map(post => {
-            threadData.innerHTML += post.author + ': <br />' + post.message + '<br /><br />'
-            threadData.innerHTML += `<button id="` + post.postId + `"onClick="window.deletePost(` + post.postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
+          const myFollowing = posts ? await getFollowingProfiles(posts) : [];
+
+          myFollowing.map((post, i) => {
+            threadData.innerHTML += post[0].name
+            threadData.innerHTML += `<button id="` + posts[i].postId + `"onClick="window.deletePost(` + posts[i].postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
           })
         })
       }
