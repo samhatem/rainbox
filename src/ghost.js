@@ -25,7 +25,7 @@ class GhostThread extends EventEmitter {
             this._userJoined(issuer, from)
             break
           case 'request_backlog':
-            this.getPosts()
+            this.getPosts(this._backlogLimit)
               .then(posts => this._sendDirect({ type: 'backlog_response', message: posts }, from))
             break
           case 'backlog_response':
@@ -70,14 +70,11 @@ class GhostThread extends EventEmitter {
    *
    * @return    {Array<Object>}      users online
    */
-  async getPosts (num = this._backlogLimit) {
+  async getPosts (num = 0) {
     const posts = [...this._backlog]
       .map(msg => JSON.parse(msg))
       .sort((p1, p2) => p1.timestamp - p2.timestamp)
       .slice(-num)
-
-    const stringifiedPosts = posts.map(msg => JSON.stringify(msg))
-    this._backlog = new Set(stringifiedPosts)
 
     return posts
   }
