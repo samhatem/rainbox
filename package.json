@@ -70,7 +70,7 @@
     "orbit-db-storage-adapter": "^0.5.3",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",
-    "tweetnacl-util": "^0.15.0"
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.4.4",
