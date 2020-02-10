@@ -69,7 +69,7 @@
     "orbit-db-identity-provider": "^0.3.0",
     "orbit-db-storage-adapter": "^0.5.3",
     "store": "^2.0.12",
-    "tweetnacl": "^1.0.1",
+    "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.0"
   },
   "devDependencies": {
