@@ -3,12 +3,10 @@ const syncComplete = (res) => {
   updateProfileData(window.box)
 }
 
-Box.get3idConnectProvider().then(provider => {
-  Box.create(provider).then(box => {
-    window.box = box
-    bauth.disabled = false
-    openThread.disabled = false
-  })
+Box.create(window.ethereum).then(box => {
+  window.box = box
+  bauth.disabled = false
+  openThread.disabled = false
 })
 
 bauth.addEventListener('click', event => {
