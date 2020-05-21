@@ -15,14 +15,14 @@ const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
-// const ThreeIdConnect = require('3id-connect').ThreeIdConnect
-const ThreeIdConnect = require('./../../3box-account/src/index').ThreeIdConnect
+const ThreeIdConnect = require('3id-connect/src/index').ThreeIdConnect
+// const ThreeIdConnect = require('./../../3box-account/src/index').ThreeIdConnect
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 // const IFRAME_STORE_URL = 'https://connect.3box.io'
-const IFRAME_STORE_URL = 'http://localhost:30001'
+const IFRAME_STORE_URL = 'https://connect-dev.3box.io'
 
 let globalIPFS, globalIPFSPromise, threeIdConnect
 

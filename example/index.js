@@ -1,9 +1,20 @@
+import Web3 from "web3"
+import web3Modal from './providers.js'
+
+let web3
+
+const getProvider = async () => {
+  const provider = await web3Modal.connect();
+  web3 = new Web3(provider);
+  return provider
+}
+
 const syncComplete = (res) => {
   console.log('Sync Complete')
   updateProfileData(window.box)
 }
 
-Box.create(window.ethereum).then(box => {
+getProvider().then(Box.create).then(box => {
   window.box = box
   bauth.disabled = false
   openThread.disabled = false
@@ -11,7 +22,7 @@ Box.create(window.ethereum).then(box => {
 
 bauth.addEventListener('click', event => {
 
-  window.ethereum.enable().then(addresses => {
+  web3.currentProvider.enable().then(addresses => {
     window.box.auth([], { address: addresses[0] }).then(() => {
       box.onSyncDone(syncComplete)
       console.log('authed')
