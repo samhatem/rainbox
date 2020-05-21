@@ -1,29 +1,25 @@
-import Web3 from "web3"
 import web3Modal from './providers.js'
-
-let web3
-
-const getProvider = async () => {
-  const provider = await web3Modal.connect();
-  web3 = new Web3(provider);
-  return provider
-}
 
 const syncComplete = (res) => {
   console.log('Sync Complete')
   updateProfileData(window.box)
 }
 
-getProvider().then(Box.create).then(box => {
+Box.create().then(box => {
   window.box = box
   bauth.disabled = false
   openThread.disabled = false
 })
 
-bauth.addEventListener('click', event => {
-
-  web3.currentProvider.enable().then(addresses => {
-    window.box.auth([], { address: addresses[0] }).then(() => {
+bauth.addEventListener('click', (event) => {
+  let ethProvider
+  web3Modal.connect()
+    .then(provider => {
+      ethProvider = provider
+      return provider.enable() })
+    .then(addresses => {
+      window.box.auth([], { address: addresses[0], provider: ethProvider })
+    .then(() => {
       box.onSyncDone(syncComplete)
       console.log('authed')
 
