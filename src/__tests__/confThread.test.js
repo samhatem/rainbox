@@ -537,12 +537,12 @@ describe('Confidential Thread', () => {
 
     afterAll(async () => {
       await orbitdb2.stop()
-      return utils.stopIPFS(ipfs2, 25)
+      return ipfs2.stop()
     })
   })
 
   afterAll(async () => {
     await orbitdb.stop()
-    return utils.stopIPFS(ipfs, 24)
+    return ipfs.stop()
   })
 })

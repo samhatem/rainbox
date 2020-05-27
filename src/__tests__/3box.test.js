@@ -253,8 +253,8 @@ describe('3Box', () => {
   })
 
   afterAll(async () => {
-    await testUtils.stopIPFS(ipfs, 0)
-    return testUtils.stopIPFS(ipfsBox, 1)
+    await ipfs.stop()
+    return ipfsBox.stop()
   })
 
   it('Create instance of 3box works as intended', async () => {

@@ -81,9 +81,9 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   afterAll(async () => {
-    // await pubsub.disconnect()
-    // await testUtils.stopIPFS(ipfs1, 9)
-    // return testUtils.stopIPFS(ipfs2, 10)
+    await pubsub.disconnect()
+    await ipfs1.stop()
+    return ipfs2.stop()
   })
 
   it('should create and auth correctly when idWallet is passed', async () => {

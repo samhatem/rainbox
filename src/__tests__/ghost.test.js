@@ -37,8 +37,8 @@ describe('Ghost Chat', () => {
   })
 
   afterAll(async () => {
-    await chat1.close()
-    return utils.stopIPFS(ipfs, 11)
+    await chat.close()
+    await ipfs.stop()
   })
 
   it('creates chat correctly', async () => {
@@ -76,7 +76,7 @@ describe('Ghost Chat', () => {
 
     afterAll(async () => {
       await chat2.close()
-      await utils.stopIPFS(ipfs2, 12)
+      await ipfs2.stop()
     })
 
     it('creates second chat correctly', async () => {
@@ -184,7 +184,7 @@ describe('Ghost Chat', () => {
 
     afterAll(async () => {
       await chat3.close()
-      return utils.stopIPFS(ipfs3, 12)
+      await ipfs3.stop()
     })
 
     it('creates third chat correctly', async (done) => {
