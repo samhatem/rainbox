@@ -293,6 +293,13 @@ class Space {
       return threads
     }, [])
   }
+
+  // create community
+
+  // requestAccess
+  // joinCommunity
+  // subscribe to community
+  // unsubscribe to community
 }
 
 module.exports = Space
