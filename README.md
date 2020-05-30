@@ -1,4 +1,4 @@
-Our fork of 3box to integrate smart contract access control.
+Our fork of 3box to integrate smart contract access control. 3Box's documentation is below.
 
 [![CircleCI](https://img.shields.io/circleci/project/github/3box/3box-js.svg?style=for-the-badge)](https://circleci.com/gh/3box/3box-js)
 [![Discord](https://img.shields.io/discord/484729862368526356.svg?style=for-the-badge)](https://discordapp.com/invite/Z3f3Cxy)
