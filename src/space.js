@@ -4,6 +4,8 @@ const GhostThread = require('./ghost')
 const API = require('./api')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
+const { contractAbi, contractAddress } = require('../localContractData.json')
+const { utils } = require('hardlydifficult-eth')
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
@@ -294,7 +296,21 @@ class Space {
     }, [])
   }
 
-  // create community
+  async createCommunity (name, web3) {
+    if (web3) this.web3 = web3
+    if (!this.web3) throw new Error('You must pass in a web3 instance')
+
+    if (!this.factory) this.factory = new this.web3.eth.Contract(contractAbi, contractAddress)
+    console.log(this.factory.address, 'the address of the factory')
+
+    /*
+    const address = await utils.create2.buildClone2Address(
+      prevCommunity.address,
+      templateAddress,
+      accounts[0] + salt.replace('0x', '')
+    )
+    */
+  }
 
   // requestAccess
   // joinCommunity

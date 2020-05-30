@@ -1,8 +1,6 @@
 const isIPFS = require('is-ipfs')
 const API = require('./api')
 const config = require('./config')
-const { symEncryptBase, symDecryptBase, newSymKey } = require('./3id/utils')
-const utils = require('./utils/index')
 const orbitAddress = require('orbit-db/src/orbit-db-address')
 
 const ORBITDB_OPTS = config.orbitdb_options

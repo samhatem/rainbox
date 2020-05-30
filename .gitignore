@@ -5,6 +5,7 @@ coverage/
 tmp/
 .js-ipfs
 .DS_Store
-yarn.lock
+package-lock.json
 orbitdb
 .idea
+localContractData.json
