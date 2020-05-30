@@ -19,7 +19,8 @@
     "example-server:start": "node example/server.js",
     "example:start": "npm run build:dist -- --watch & npm run example-server:start",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none -d 3 'src/**/*.js' >> README.md",
-    "build:rain:dev": "node getLocalContractData.js && yarn build:dist:dev"
+    "update-contract": "node getLocalContractData.js",
+    "build:rain:dev": "yarn update-contract && yarn build:dist:dev"
   },
   "browser": {
     "fs": false,
@@ -55,6 +56,7 @@
     "did-resolver": "^1.1.0",
     "events": "^3.0.0",
     "graphql-request": "^1.8.2",
+    "hardlydifficult-eth": "^1.0.0",
     "https-did-resolver": "^1.0.0",
     "ipfs": "^0.40.0",
     "ipfs-did-document": "^1.2.3",

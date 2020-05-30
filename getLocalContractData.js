@@ -1,7 +1,7 @@
 const fs = require('fs')
 
-const factoryContract = JSON.parse(fs.readFileSync('../protocol/build/contracts/RainCommunity.json', 'utf8'))
-const devData = JSON.parse(fs.readFileSync('../protocol/.openzeppelin/dev-5777.json', 'utf8'))
+const factoryContract = JSON.parse(fs.readFileSync('../smart-contracts/build/contracts/RainCommunity.json', 'utf8'))
+const devData = JSON.parse(fs.readFileSync('../smart-contracts/.openzeppelin/dev-5777.json', 'utf8'))
 
 const contractData = {
   contractAbi: factoryContract.abi,
