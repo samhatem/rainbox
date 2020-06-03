@@ -29,7 +29,6 @@ class Community {
    */
   async post (message) {
     this._requireLoad()
-    this._requireAuth()
     this._subscribe(this._address, { firstModerator: this._firstModerator, members: this._members, name: this._name })
     this._replicator.ensureConnected(this._address, true)
     const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
@@ -49,7 +48,6 @@ class Community {
    */
   async addModerator (id) {
     this._requireLoad()
-    this._requireAuth()
 
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
@@ -67,7 +65,6 @@ class Community {
    */
   async addMember (id) {
     this._requireLoad()
-    this._requireAuth()
     this._throwIfNotMembers()
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
@@ -84,7 +81,6 @@ class Community {
    */
   async deletePost (hash) {
     this._requireLoad()
-    this._requireAuth()
     return this._db.remove(hash)
   }
 
@@ -123,11 +119,19 @@ class Community {
     })
   }
 
-  async _load () {
-    this._db = await this._replicator._orbitdb.feed(dbString || this._name, {
+  async _load (dbString) {
+    const loadByAddress = dbString && orbitAddress.isValid(dbString)
+    if (!loadByAddress) await this._initAcConfigs()
+
+    if (!this._accessController) _initAcConfigs()
+    this._db = await this._replicator._orbitdb.feed(this._name, {
       ...ORBITDB_OPTS,
       accessController: this._accessController
     })
+
+    if (loadByAddress) {
+      // set variablies if loaded by address
+    }
 
     await this._db.load()
   }
@@ -136,19 +140,9 @@ class Community {
     if (!this._db) throw new Error('_load must be called before interacting with the store')
   }
 
-  _requireAuth () {
-    if (!this._authenticated) throw new Error('You must authenticate before performing this action')
-  }
-
   async close () {
     this._requireLoad()
     await this._db.close()
-  }
-
-  async _setIdentity (odbId) {
-    this._db.setIdentity(odbId)
-    this._db.access._db.setIdentity(odbId)
-    this._authenticated = true
   }
 
   async _initAcConfigs () {

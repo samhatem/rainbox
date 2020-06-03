@@ -1,15 +1,15 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
+const Community = require('./community')
 const GhostThread = require('./ghost')
 const API = require('./api')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
-const { contractAbi, contractAddress } = require('../localContractData.json')
-const { utils } = require('hardlydifficult-eth')
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
 const namesToChatName = (spaceName, chatName) => `3box.ghost.${spaceName}.${chatName}`
+const namesToCommunityName = (comName) => `rain.community.${comName}`
 
 /** Class representing a user. */
 class User {
@@ -94,6 +94,7 @@ class Space {
     this._replicator = replicator
     this._store = new KeyValueStore(nameToSpaceName(this._name), this._replicator)
     this._activeThreads = {}
+    this._activeCommunities = {}
     /**
      * @property {KeyValueStore} public         access the profile store of the space
      */
@@ -296,20 +297,16 @@ class Space {
     }, [])
   }
 
-  async createCommunity (name, web3) {
-    if (web3) this.web3 = web3
-    if (!this.web3) throw new Error('You must pass in a web3 instance')
+  async createCommunity (name, communityAddress, abi, provider) {
+    if (!this._3id) throw new Error('Account must be authenticated to create a thread')
 
-    if (!this.factory) this.factory = new this.web3.eth.Contract(contractAbi, contractAddress)
-    console.log(this.factory.address, 'the address of the factory')
+    // CHECK THAT ADDRESS, ABI AND PROVIDER ARE VALID!
 
-    /*
-    const address = await utils.create2.buildClone2Address(
-      prevCommunity.address,
-      templateAddress,
-      accounts[0] + salt.replace('0x', '')
-    )
-    */
+    const community = new Community(namesToCommunityName(name), this._replicator, communityAddress, abi, provider)
+    if (this._activeCommunities[communityAddress]) return this._activeCommunities[communityAddress]
+    await community._load()
+    this._activeCommunities[communityAddress] = community
+    return community
   }
 
   // requestAccess

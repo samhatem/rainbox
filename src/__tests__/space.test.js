@@ -1,8 +1,7 @@
 jest.mock('../keyValueStore')
 jest.mock('../thread')
 const Thread = require('../thread')
-const ORBITDB = 'orbitdb instance'
-let authenticated = false
+const authenticated = false
 const threeIdMock = {
   isAuthenticated: jest.fn(() => {
     return authenticated
@@ -10,7 +9,7 @@ const threeIdMock = {
   authenticate: jest.fn(),
   hashDBKey: jest.fn(key => `${key}asdfasdfasdf`),
   encrypt: data => { return { ciphertext: 'wow, such encrypted/' + data, nonce: 123 } },
-  decrypt: ({ciphertext, nonce}) => ciphertext.split('/')[1],
+  decrypt: ({ ciphertext, nonce }) => ciphertext.split('/')[1],
   signJWT: (payload, { space }) => {
     return `a fake jwt for ${space}`
   },
@@ -18,21 +17,27 @@ const threeIdMock = {
   getSubDID: (space) => `subdid-${space}`
 }
 const replicatorMock = 'replicator'
-let rootstoreMockData = []
+const rootstoreMockData = []
 const rootstoreMock = {
   iterator: () => { return { collect: () => rootstoreMockData } },
   add: jest.fn(),
   del: jest.fn()
 }
 
+const ethers = require('ethers')
+const { CommunityService } = require('../community-js/index.js')
+const { contractAbi, contractAddress } = require('../../localContractData.json')
+const provider = new ethers.providers.JsonRpcProvider('http://localhost:7545')
+
+const TEST_PRIVATE_KEY = 'ba56cf354fc1c8570529f5cab5471895bced6122fcaf3fa718d96f83cf400595' // taken from ganache
+const wallet = new ethers.Wallet(TEST_PRIVATE_KEY, provider)
+
 const Space = require('../space')
 
-
 describe('Space', () => {
-
   let space
-  let NAME1 = 'test1'
-  let NAME2 = 'test2'
+  const NAME1 = 'test1'
+  const NAME2 = 'test2'
 
   beforeEach(() => {
     rootstoreMock.add.mockClear()
@@ -49,8 +54,8 @@ describe('Space', () => {
   })
 
   it('should open a new space correctly', async () => {
-    let opts = {
-      consentCallback: jest.fn(),
+    const opts = {
+      consentCallback: jest.fn()
     }
     const syncDonePromise = new Promise((resolve, reject) => {
       opts.onSyncDone = resolve
@@ -58,15 +63,15 @@ describe('Space', () => {
     await space.open(threeIdMock, opts)
     expect(space.isOpen).toBeTruthy()
     expect(opts.consentCallback).toHaveBeenCalledWith(true, NAME1)
-    //expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
+    // expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
     expect(threeIdMock.isAuthenticated).toHaveBeenCalledWith([NAME1])
     expect(threeIdMock.authenticate).toHaveBeenCalledWith([NAME1], opts)
     return syncDonePromise
   })
 
   it('should return directly if space already opened', async () => {
-    let opts = {
-      consentCallback: jest.fn(),
+    const opts = {
+      consentCallback: jest.fn()
     }
     await space.open(threeIdMock, opts)
     expect(opts.consentCallback).toHaveBeenCalledTimes(0)
@@ -146,7 +151,7 @@ describe('Space', () => {
     })
 
     it('log should only return private values', async () => {
-      const refLog = [{ key: 'k1', op: 'PUT', timeStamp: 123, value: 'sv1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'sv3' }, { key: 'k4', op: 'PUT', timeStamp: 123, value: 'sv4' }, { key: 'k5', op: 'PUT', timeStamp: 123, value: 'sv5' } ]
+      const refLog = [{ key: 'k1', op: 'PUT', timeStamp: 123, value: 'sv1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'sv3' }, { key: 'k4', op: 'PUT', timeStamp: 123, value: 'sv4' }, { key: 'k5', op: 'PUT', timeStamp: 123, value: 'sv5' }]
       const log1 = await space.private.log()
       expect(log1).toEqual(refLog)
       space._store.set('key', 'value')
@@ -165,7 +170,7 @@ describe('Space', () => {
       expect(await space.private.all()).toEqual(expected)
 
       const result = await space.private.all({ metadata: true })
-      Object.entries(expected).map(([k,v]) => {
+      Object.entries(expected).map(([k, v]) => {
         expect(result[k].value).toEqual(v)
         expect(result[k].timestamp).toBeGreaterThan(0)
       })
@@ -195,7 +200,7 @@ describe('Space', () => {
     it('subscribes to thread correctly', async () => {
       await space.subscribeThread(threadAddress)
       expect(await space.public.get(`thread-${threadAddress}`)).toEqual({ address: threadAddress })
-      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
+      expect(await space.subscribedThreads()).toEqual([{ address: threadAddress }])
     })
 
     it('unsubscribes from thread correctly', async () => {
@@ -214,11 +219,11 @@ describe('Space', () => {
       expect(t1._setIdentity).toHaveBeenCalledWith('odbid')
       // function for autosubscribing works as intended
       await Thread.mock.calls[0][6](threadAddress)
-      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
+      expect(await space.subscribedThreads()).toEqual([{ address: threadAddress }])
     })
 
     it('a thread loaded by address, must be in same space as threadname, otherwise throws', async () => {
-      const threadAddress = "/orbitdb/zdpuAz8c2gjonfuhYCfPJqZJUfYM5Kd7bpHaMyJZSLDMHSNvQ/3box.thread.errorspace.test"
+      const threadAddress = '/orbitdb/zdpuAz8c2gjonfuhYCfPJqZJUfYM5Kd7bpHaMyJZSLDMHSNvQ/3box.thread.errorspace.test'
       await expect(space.joinThreadByAddress(threadAddress)).rejects.toThrow(/must open within same space/)
     })
 
@@ -232,12 +237,11 @@ describe('Space', () => {
       expect(t1._setIdentity).toHaveBeenCalledWith('odbid')
       // function for autosubscribing works as intended
       await Thread.mock.calls[0][6](threadAddress2)
-      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
+      expect(await space.subscribedThreads()).toEqual([{ address: threadAddress }])
     })
 
     it('should trow if space not open and no firstModerator', async () => {
       const sp = new Space(NAME2, replicatorMock)
-      const t1 = await
       expect(sp.joinThread('t1')).rejects.toMatchSnapshot()
     })
 
@@ -253,6 +257,23 @@ describe('Space', () => {
       expect(t1._setIdentity).toHaveBeenCalledTimes(0)
       // function for autosubscribing works as intended
       return Thread.mock.calls[0][6](threadAddress)
+    })
+  })
+
+  describe('Community', () => {
+    it('create a community', async () => {
+      const NAME = Math.random().toString(36).substring(2, 15)
+      const SYMBOL = 'COM'
+      const IS_OPEN = false
+
+      const communityService = new CommunityService(contractAbi, contractAddress, wallet)
+
+      const newAddress = await communityService.createCommunityContract(NAME, SYMBOL, IS_OPEN)
+
+      const newCommunity = new ethers.Contract(newAddress, contractAbi, provider)
+      await newCommunity.communityTemplate.call()
+
+      await space.createCommunity('name', newAddress, contractAbi, provider)
     })
   })
 })

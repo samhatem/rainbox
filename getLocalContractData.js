@@ -5,7 +5,7 @@ const devData = JSON.parse(fs.readFileSync('../smart-contracts/.openzeppelin/dev
 
 const contractData = {
   contractAbi: factoryContract.abi,
-  contractAddress: devData.contracts.RainCommunity.address
+  contractAddress: devData.proxies['ClearRain/RainCommunity'][0].address
 }
 
 fs.writeFile('localContractData.json', JSON.stringify(contractData), function (err) {
