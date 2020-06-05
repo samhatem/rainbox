@@ -4982,7 +4982,7 @@ cids@^0.7.1, cids@~0.7.0, cids@~0.7.1:
     multicodec "^1.0.0"
     multihashes "~0.4.15"
 
-cids@^0.8.0, cids@~0.8.0:
+cids@^0.8.0, cids@^0.8.1, cids@~0.8.0:
   version "0.8.1"
   resolved "https://registry.yarnpkg.com/cids/-/cids-0.8.1.tgz#24a6e1c78ba27d1b80bd7e99e7d450a74a987014"
   integrity sha512-bs9hGUYHzsclGSt4ipi6SRUBIWYpuEHhd2uPc5hUatNQl6y5mFr+6JvJtN3fGUiNZNohc7rkY6OpXamwj6PQeg==

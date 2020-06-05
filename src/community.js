@@ -1,9 +1,12 @@
 const isIPFS = require('is-ipfs')
 const API = require('./api')
 const config = require('./config')
-const orbitAddress = require('orbit-db/src/orbit-db-address')
+const OrbitDB = require('orbit-db')
 
 const ORBITDB_OPTS = config.orbitdb_options
+const MEMBER = 'MEMBER'
+const MODERATOR = 'MODERATOR'
+const ADMIN = 'ADMIN'
 
 const isValid3ID = did => {
   const parts = did.split(':')
@@ -17,8 +20,8 @@ class Community {
     this._name = name
     this._replicator = replicator
     this._contractAddress = contractAddress
-    this._abi = abi
     this._web3 = web3
+    this._abi = abi
   }
 
   /**
@@ -29,16 +32,22 @@ class Community {
    */
   async post (message) {
     this._requireLoad()
-    this._subscribe(this._address, { firstModerator: this._firstModerator, members: this._members, name: this._name })
-    this._replicator.ensureConnected(this._address, true)
+    this._requireAuth()
+    this._replicator.ensureConnected(this._feedAddress, true)
     const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
-
-    if (this._confidential) message = this._symEncrypt(message)
 
     return this._db.add({
       message,
       timestamp
     })
+  }
+
+  get feedAddress () {
+    return this._db ? this._feedAddress : null
+  }
+
+  get contractAddress () {
+    return this._contractAddress
   }
 
   /**
@@ -48,6 +57,7 @@ class Community {
    */
   async addModerator (id) {
     this._requireLoad()
+    this._requireAuth()
 
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
@@ -65,13 +75,26 @@ class Community {
    */
   async addMember (id) {
     this._requireLoad()
-    this._throwIfNotMembers()
+    this._requireAuth()
+
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
     }
-    if (!isValid3ID(id)) throw new Error('addMember: must provide valid 3ID')
+    if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
 
-    return this._db.access.grant(MEMBER, id, await this._encryptSymKey(id))
+    return this._db.access.grant(MEMBER, id)
+  }
+
+  async addAdmin (id) {
+    this._requireLoad()
+    this._requireAuth()
+
+    if (id.startsWith('0x')) {
+      id = await API.getSpaceDID(id, this._spaceName)
+    }
+    if (!isValid3ID(id)) throw new Error('addAdmin: must provide valid 3ID')
+
+    return this._db.access.grant(ADMIN, id)
   }
 
   /**
@@ -81,6 +104,7 @@ class Community {
    */
   async deletePost (hash) {
     this._requireLoad()
+    this._requireAuth()
     return this._db.remove(hash)
   }
 
@@ -119,43 +143,66 @@ class Community {
     })
   }
 
-  async _load (dbString) {
-    const loadByAddress = dbString && orbitAddress.isValid(dbString)
-    if (!loadByAddress) await this._initAcConfigs()
+  async close () {
+    this._requireLoad()
+    await this._db.close()
+  }
 
-    if (!this._accessController) _initAcConfigs()
-    this._db = await this._replicator._orbitdb.feed(this._name, {
+  async _load (dbString) {
+    if (!this._accessController) await this._initAcConfigs()
+
+    this._db = await this.replicator._orbitdb.feed(dbString || this._name, {
       ...ORBITDB_OPTS,
       accessController: this._accessController
     })
 
-    if (loadByAddress) {
-      // set variablies if loaded by address
-    }
+    await this._db.load()
+    this._feedAddress = this._db.address.toString()
+    this._replicator.ensureConnected(this._feedAddress, true)
+
+    return this._feedAddress
+  }
+
+  async _loadReadOnly (dbString, ipfs) {
+    if (!this._accessController) await this._initAcConfigs()
+
+    const orbit = await OrbitDB.createInstance(ipfs)
+    this._db = await orbit.feed(dbString || this._name, {
+      ...ORBITDB_OPTS,
+      accessController: this._accessController
+    })
 
     await this._db.load()
+    this._feedAddress = this._db.address.toString()
+    return this._feedAddress
+  }
+
+  async _save () {
+    this._requireLoad()
+    return await this._db.access.save()
   }
 
   _requireLoad () {
     if (!this._db) throw new Error('_load must be called before interacting with the store')
   }
 
-  async close () {
-    this._requireLoad()
-    await this._db.close()
+  _requireAuth () {
+    if (!this._authenticated) throw new Error('You must authenticate before performing this action')
+  }
+
+  async _setIdentity (odbId) {
+    this._db.setIdentity(odbId)
+    this._authenticated = true
   }
 
   async _initAcConfigs () {
     if (this._accessController) return
+
     this._accessController = {
       type: 'eth-contract/rain-community',
       web3: this._web3,
       abi: this._abi,
       contractAddress: this._contractAddress
-    }
-
-    if (this._encKeyId) {
-      this._accessController.encKeyId = this._encKeyId
     }
   }
 }

@@ -19,8 +19,7 @@
     "example-server:start": "node example/server.js",
     "example:start": "npm run build:dist -- --watch & npm run example-server:start",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none -d 3 'src/**/*.js' >> README.md",
-    "update-contract": "node getLocalContractData.js",
-    "build:rain:dev": "yarn update-contract && yarn build:dist:dev",
+    "build:rain:dev": "yarn build:dist:dev",
     "test:rain": "jest src/__tests__/space.test.js"
   },
   "browser": {
@@ -53,6 +52,7 @@
     "@babel/runtime": "^7.4.5",
     "@ethersproject/hdnode": "5.0.0-beta.137",
     "@ethersproject/wallet": "5.0.0-beta.136",
+    "cids": "^0.8.1",
     "did-jwt": "^4.2.0",
     "did-resolver": "^1.1.0",
     "ethers": "^4.0.47",

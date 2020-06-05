@@ -1,6 +1,7 @@
 'use strict'
 const io = require('orbit-db-io')
 const entryIPFS = require('ipfs-log/src/entry')
+const ethers = require('ethers')
 const { getConfig } = require('./api')
 
 const type = 'eth-contract/rain-community'
@@ -12,14 +13,19 @@ const OWNER_VAL = 3
 const ADMIN_VAL = 2
 const MODERATOR_VAL = 1
 
-const isValidEthAddress = (web3, address) => {
-  return web3.utils.isAddress(address)
+const isValidEthAddress = (address) => {
+  try {
+    ethers.utils.getAddress(address)
+    return true
+  } catch (e) {
+    return false
+  }
 }
 
 class CommunityAccessController {
   constructor (ipfs, web3, abi, address) {
     this._ipfs = ipfs
-    this.web3 = web3
+    this.provider = new ethers.providers.Web3Provider(web3)
     this.abi = abi
     this.contractAddress = address
   }
@@ -41,21 +47,25 @@ class CommunityAccessController {
         throw new Error('CommunityAccessController.load ERROR:', e)
       }
     }
-    this.contract = new this.web3.eth.Contract(this.abi, this.contractAddress)
+    // PUT THIS CONTRACT LOGIC IN RAIN SERVICE?
+    this.contract = new ethers.Contract(this.contractAddress, this.abi, this.provider)
+    // connecting to signer may cause issues when creating without a connected wallet
+    // TODO pass in whether community is read only to constructor
+    this.contract = this.contract.connect(this.provider.getSigner())
   }
 
   async save () {
     let cid
     try {
       cid = await io.write(this._ipfs, 'dag-cbor', {
-        contractAddress: this.address,
-        abi: JSON.stringify(this.abi, null, 2)
+        contractAddress: this.contractAddress,
+        abi: JSON.stringify(this.abi)
       })
     } catch (e) {
       throw new Error('CommunityAccessController.save ERROR:', e)
     }
 
-    return { address: cid }
+    return cid
   }
 
   async canAppend (entry, identityProvider) {
@@ -65,13 +75,13 @@ class CommunityAccessController {
     const config = await getConfig(entry.identity.id)
     const address = this.getAddressFromConfig(config)
 
-    if (!isValidEthAddress(this.web3, address)) {
+    if (!isValidEthAddress(address)) {
       console.warn(`WARNING: "${address}" is not a valid eth address`)
       return Promise.resolve(false)
     }
 
     if (op === 'ADD') {
-      const hasCapability = await this.contract.methods.canAppend(address).call()
+      const hasCapability = await this.contract.canAppend(address)
       const hasValidSig = await trueIfValidSig()
       return hasCapability && hasValidSig
     }
@@ -95,22 +105,26 @@ class CommunityAccessController {
     return false
   }
 
-  // Move grant and revoke to community file?????????? Probably
   async grant (capability, identifier, options) {
     const config = await getConfig(identifier)
     const address = this.getAddressFromConfig(config)
 
-    if (!isValidEthAddress(this.web3, address)) {
+    if (!isValidEthAddress(address)) {
       console.warn(`WARNING: "${address}" is not a valid eth address`)
       return Promise.resolve(false)
     }
+
+    console.warn(options, 'THE OPTIONS IN GRANT, ARE THEY NECESSARY?')
+
+    // NOT SURE IF .SEND(OPTIONS) IS NECESSARY AND MIGHT EVEN CAUSE ERRORS
+    // HAVE NOT TESTED
     switch (capability) {
       case MEMBER:
-        return this.contract.methods.addMember(address).send(options)
+        return this.contract.addMember(address).send(options)
       case MODERATOR:
-        return this.contract.methods.addModerator(address).send(options)
+        return this.contract.addModerator(address).send(options)
       case ADMIN:
-        return this.contract.methods.addAdmin(address).send(options)
+        return this.contract.addAdmin(address).send(options)
       default:
         console.warn(`WARNING: "${capability}" is not a valid capability`)
         return Promise.resolve(false)
@@ -121,17 +135,22 @@ class CommunityAccessController {
     const config = await getConfig(identifier)
     const address = this.getAddressFromConfig(config)
 
-    if (!isValidEthAddress(this.web3, address)) {
+    if (!isValidEthAddress(address)) {
       console.warn(`WARNING: "${address}" is not a valid eth address`)
       return Promise.resolve(false)
     }
+
+    console.warn(options, 'THE OPTIONS IN REVOKE, ARE THEY NECESSARY?')
+
+    // NOT SURE IF .SEND(OPTIONS) IS NECESSARY AND MIGHT EVEN CAUSE ERRORS
+    // HAVE NOT TESTED
     switch (capability) {
       case MEMBER:
-        return this.contract.methods.removeMember(address).send(options)
+        return this.contract.removeMember(address).send(options)
       case MODERATOR:
-        return this.contract.methods.removeModerator(address).send(options)
+        return this.contract.removeModerator(address).send(options)
       case ADMIN:
-        return this.contract.methods.removeAdmin(address).send(options)
+        return this.contract.removeAdmin(address).send(options)
       default:
         console.warn(`WARNING: "${capability}" is not a valid capability`)
         return Promise.resolve(false)
@@ -142,7 +161,7 @@ class CommunityAccessController {
   async transferOwnership (identifier, options) {
     const config = await getConfig(identifier)
     const address = this.getAddressFromConfig(config)
-    await this.contract.methods.transferOwnership(address).send(options)
+    await this.contract.transferOwnership(address).send(options)
   }
 
   static async create (orbitdb, options) {
@@ -171,13 +190,13 @@ class CommunityAccessController {
   }
 
   async getGreatestCapability (address) {
-    const isOwner = await this.contract.methods.isOwner(address).call()
+    const isOwner = await this.contract.isOwner(address)
     if (isOwner) return OWNER_VAL
 
-    const isAdmin = await this.contract.methods.isAdmin(address).call()
+    const isAdmin = await this.contract.isAdmin(address)
     if (isAdmin) return ADMIN_VAL
 
-    const isMod = await this.contract.methods.isModerator(address).call()
+    const isMod = await this.contract.isModerator(address)
     if (isMod) return MODERATOR_VAL
 
     return 0

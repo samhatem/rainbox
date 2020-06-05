@@ -1,8 +1,11 @@
 const graphQLRequest = require('graphql-request').request
 const utils = require('./utils/index')
+const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
+const io = require('orbit-db-io')
 const verifier = require('./utils/verifier')
 const { isSupportedDID } = require('./utils/id')
 const config = require('./config.js')
+const Community = require('./community.js')
 
 const GRAPHQL_SERVER_URL = config.graphql_server_url
 const PROFILE_SERVER_URL = config.profile_server_url
@@ -127,6 +130,21 @@ class BoxApi {
     } catch (err) {
       throw new Error(err)
     }
+  }
+
+  static async getCommunity (feedAddress, contractAddress, metaCID, provider) {
+    if (!OrbitDBAddress.isValid(feedAddress)) throw new Error('getCommunity: valid orbitdb address required')
+    const ipfs = await this.getIPFS()
+    console.log(feedAddress, 'THE FEED ADDRESS')
+    const threadName = feedAddress.split('/')[3]
+    console.log(threadName, 'THE NAME')
+
+    const metaData = await io.read(ipfs, metaCID)
+    const abi = JSON.parse(metaData.abi)
+
+    const community = new Community(threadName, null, contractAddress, abi, provider, ipfs)
+    await community._loadReadOnly(feedAddress, ipfs)
+    return community
   }
 
   /**

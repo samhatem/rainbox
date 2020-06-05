@@ -5,6 +5,7 @@ const GhostThread = require('./ghost')
 const API = require('./api')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
+const io = require('orbit-db-io')
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
@@ -146,6 +147,7 @@ class Space {
       this.private = privateStoreReducer(this._store, this._3id, this._name)
       // make sure we're authenticated to all threads
       await this._authThreads(this._3id)
+      await this._authCommunities(this._3id)
     }
   }
 
@@ -157,6 +159,13 @@ class Space {
       } else {
         thread._setIdentity(odbIdentity)
       }
+    })
+  }
+
+  async _authCommunities (threeId) {
+    const odbIdentity = await threeId.getOdbId(this._name)
+    Object.values(this._activeCommunities).forEach(community => {
+      community._setIdentity(odbIdentity)
     })
   }
 
@@ -297,20 +306,38 @@ class Space {
     }, [])
   }
 
-  async createCommunity (name, communityAddress, abi, provider) {
-    if (!this._3id) throw new Error('Account must be authenticated to create a thread')
+  async createCommunityFeed (name, symbol, contractAddress, abi, provider) {
+    if (!this._3id) throw new Error('Account must be authenticated to create a community')
 
     // CHECK THAT ADDRESS, ABI AND PROVIDER ARE VALID!
-
-    const community = new Community(namesToCommunityName(name), this._replicator, communityAddress, abi, provider)
-    if (this._activeCommunities[communityAddress]) return this._activeCommunities[communityAddress]
+    const community = new Community(namesToCommunityName(name), this._replicator, contractAddress, abi, provider)
+    if (this._activeCommunities[contractAddress]) return this._activeCommunities[contractAddress]
     await community._load()
-    this._activeCommunities[communityAddress] = community
-    return community
+    await community._setIdentity(await this._3id.getOdbId(this._name))
+    const cid = await community._save()
+    this._activeCommunities[contractAddress] = community
+    return {
+      community,
+      cid
+    }
   }
 
+  async getCommunity (feedAddress, contractAddress, metaCID, provider) {
+    if (!OrbitDBAddress.isValid(feedAddress)) throw new Error('joinCommunity: valid orbitdb address required')
+    if (!this.isOpen) throw new Error('joinCommunity requires space to be open')
+    if (this._activeThreads[contractAddress]) return this._activeThreads[contractAddress]
+
+    const threadName = feedAddress.split('.')[2]
+
+    const metaData = await io.read(this._replicator.ipfs, metaCID)
+    const abi = JSON.parse(metaData.abi)
+
+    const community = new Community(namesToCommunityName(threadName), this._replicator, contractAddress, abi, provider)
+    await community._load(feedAddress)
+    await community._setIdentity(await this._3id.getOdbId(this._name))
+    return community
+  }
   // requestAccess
-  // joinCommunity
   // subscribe to community
   // unsubscribe to community
 }

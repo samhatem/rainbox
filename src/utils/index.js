@@ -1,7 +1,7 @@
+import { verifyMessage } from '@ethersproject/wallet'
 const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch')
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
-import { verifyMessage } from '@ethersproject/wallet'
 
 const ENC_BLOCK_SIZE = 24
 const MAGIC_ERC1271_VALUE = '0x20c13b0b'
@@ -26,9 +26,9 @@ const getMessageConsent = (did, timestamp) => {
 }
 
 const safeSend = (provider, data) => {
-  const send = (Boolean(provider.sendAsync) ? provider.sendAsync : provider.send).bind(provider)
+  const send = (provider.sendAsync ? provider.sendAsync : provider.send).bind(provider)
   return new Promise((resolve, reject) => {
-    send(data, function(err, result) {
+    send(data, function (err, result) {
       if (err) reject(err)
       else if (result.error) reject(result.error)
       else resolve(result.result)
@@ -87,10 +87,11 @@ module.exports = {
     if (body) {
       opts = { body: JSON.stringify(body), method: 'POST', headers: { 'Content-Type': 'application/json' } }
     }
+
     const r = await fetch(url, opts)
 
     if (r.ok) {
-      let res = await r.json()
+      const res = await r.json()
       return res
     } else {
       throw HTTPError(r.status, (await r.json()).message)

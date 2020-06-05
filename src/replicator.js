@@ -16,9 +16,11 @@ const {
   ThreadAccessController,
   ModeratorAccessController
 } = require('3box-orbitdb-plugins')
+const CommunityAccessController = require('./CommunityAccessController')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
+AccessControllers.addAccessController({ AccessController: CommunityAccessController })
 const config = require('./config')
 const Identities = require('orbit-db-identity-provider')
 Identities.addIdentityProvider(OdbIdentityProvider)
@@ -272,7 +274,7 @@ class Replicator {
   }
 
   async ensureConnected (odbAddress) {
-    const isThread = odbAddress.includes('thread')
+    const isThread = odbAddress.includes('thread') || odbAddress.includes('community')
     const roomPeers = await this.ipfs.pubsub.peers(odbAddress)
     if (!roomPeers.find(p => p === this._pinningNodePeerId)) {
       this.ipfs.swarm.connect(this._pinningNode, () => {})
